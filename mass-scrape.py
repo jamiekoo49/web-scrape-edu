@@ -37,7 +37,6 @@ def scrape_general_table(soup, url):
 
     header_row = table.find('thead').find_all('th') or table.find('thead').find_all('td')
     headers = [header.text.strip().lower() for header in header_row]
-    print(f"Headers found: {headers} on page: {url}")
 
     header_map = {
         'name': None,
@@ -85,13 +84,7 @@ def scrape_general_table(soup, url):
                 title = full_name = phone = email = "N/A"
 
         phone = ' '.join(sorted(set(phone.split())))
-
-        # Split name into first and last names
-        name_parts = full_name.split()
-        first_name = name_parts[0] if len(name_parts) > 0 else ''
-        last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
-
-        coaching_data.append([university_name, title, first_name, last_name, phone, email])
+        coaching_data.append([university_name, title, full_name, phone, email])
     return coaching_data
 
 def scrape_coaches_page(url):
@@ -107,18 +100,16 @@ def scrape_coaches_page(url):
 urls = ['https://uabsports.com/sports/mens-soccer/coaches', 'https://nuhuskies.com/sports/mens-soccer/coaches', 'https://goterriers.com/sports/mens-soccer/coaches',
         'https://bluehens.com/sports/mens-soccer/coaches', 'https://goduke.com/sports/mens-soccer/coaches', 'https://binghamtonbearcats.com/sports/mens-soccer/coaches',
         'https://bryantbulldogs.com/sports/mens-soccer/coaches/2024', 'https://unhwildcats.com/sports/mens-soccer/coaches', 'https://davidsonwildcats.com/sports/mens-soccer/coaches',
-        'https://fordhamsports.com/sports/mens-soccer/coaches']
+        'https://fordhamsports.com/sports/mens-soccer/coaches', 'https://mitathletics.com/sports/mens-soccer/coaches']
 all_coaching_data = []
 
 # Scrape each URL
 for url in urls:
     coaching_data = scrape_coaches_page(url)
-    if coaching_data:
-        print(f"Data found on page: {url}")
     all_coaching_data.extend(coaching_data)
 
 if all_coaching_data:
-    df = pd.DataFrame(all_coaching_data, columns=["University", "Title", "First Name", "Last Name", "Phone", "Email"])
+    df = pd.DataFrame(all_coaching_data, columns=["University", "Title", "Name", "Phone", "Email"])
     print(df)
 else:
     print("No data was scraped.")
