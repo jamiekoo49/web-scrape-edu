@@ -2,27 +2,36 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
+def extract_university_name(soup, url):
+    header = soup.find('header', class_="main-header")
+    if header:
+        h1_tag = header.find('h1')
+        if h1_tag:
+            return h1_tag.text.strip()
+
+    print(f"University name not found on page: {url}")
+    return "Unknown University"
+
 def scrape_general_table(soup, url):
     coaching_data = []
 
-    # Find the table
+    # Find the relevant table
     table = soup.find('table')
     if not table:
         print(f"No table found on page: {url}")
         return []
 
-    # Find the headers
+    # Find University name and headers
+    university_name = extract_university_name(soup, url)
     header_row = table.find('thead').find_all('th') or table.find('thead').find_all('td')
     headers = [header.text.strip().lower() for header in header_row]
     print(f"Headers found: {headers} on page: {url}")
 
-    # Create a mapping of column name to its index
     header_map = {
         'name': None,
         'title': None,
         'phone': None,
-        'email address': None
-    }
+        'email address': None}
 
     for i, header in enumerate(headers):
         if 'name' in header:
@@ -34,7 +43,6 @@ def scrape_general_table(soup, url):
         elif 'email' in header:
             header_map['email address'] = i
 
-    # Ensure we have found the necessary headers
     if None in header_map.values():
         print(f"Skipping table due to missing expected columns on page: {url}")
         return []
@@ -42,7 +50,6 @@ def scrape_general_table(soup, url):
     # Extract data from rows in the <tbody>
     rows = table.find('tbody').find_all('tr')
     for row in rows:
-        # First check if the name is in <th>
         name_column = row.find('th')
 
         if name_column:
@@ -64,16 +71,14 @@ def scrape_general_table(soup, url):
             else:
                 title = full_name = phone = email = "N/A"
 
-        # Clean up phone number by removing duplicates
-        phone = ' '.join(sorted(set(phone.split())))  # Split into parts, remove duplicates, and join again
+        phone = ' '.join(sorted(set(phone.split())))
 
         # Split name into first and last names
         name_parts = full_name.split()
         first_name = name_parts[0] if len(name_parts) > 0 else ''
         last_name = ' '.join(name_parts[1:]) if len(name_parts) > 1 else ''
 
-        coaching_data.append([title, first_name, last_name, phone, email])
-
+        coaching_data.append([university_name, title, first_name, last_name, phone, email])
     return coaching_data
 
 def scrape_coaches_page(url):
@@ -86,7 +91,8 @@ def scrape_coaches_page(url):
         print(f"Failed to load the page, status code: {response.status_code}")
         return []
 
-urls = ['https://uabsports.com/sports/mens-soccer/coaches', 'https://nuhuskies.com/sports/mens-soccer/coaches', 'https://goterriers.com/sports/mens-soccer/coaches']
+urls = ['https://uabsports.com/sports/mens-soccer/coaches', 'https://nuhuskies.com/sports/mens-soccer/coaches', 'https://goterriers.com/sports/mens-soccer/coaches',
+        'https://bluehens.com/sports/mens-soccer/coaches', 'https://goduke.com/sports/mens-soccer/coaches']
 all_coaching_data = []
 
 # Scrape each URL
@@ -97,7 +103,7 @@ for url in urls:
     all_coaching_data.extend(coaching_data)
 
 if all_coaching_data:
-    df = pd.DataFrame(all_coaching_data, columns=["Title", "First Name", "Last Name", "Phone", "Email"])
+    df = pd.DataFrame(all_coaching_data, columns=["University", "Title", "First Name", "Last Name", "Phone", "Email"])
     print(df)
 else:
     print("No data was scraped.")
